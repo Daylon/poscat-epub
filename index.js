@@ -1,8 +1,10 @@
 const FILESYSTEM = require('fs'),
 	PATH = require('path'),
-	HANDLEBARS = require('handlebars')
+	HANDLEBARS = require('handlebars'),
+	ARCHIVER = require('archiver')
 
-const PATH_BOOK = PATH.join('.', 'book', 'EPUB'),
+const OUTPUT_FOLDER = 'build',
+	PATH_BOOK = PATH.join('.', 'book', 'EPUB'),
 	PAGE_TYPES = ['index', 'toc', 'package'],
 	CHAPTER_KEY = 'chapters',
 	COVER_KEY = 'cover',
@@ -78,11 +80,57 @@ let copyStaticAssets = () => {}
 
 // 3. Create archive
 
+let buildArchive = () => {
+	const EPUB = archiver('zip', {
+			zlib: { level: 9 }, // Sets the compression level.
+		}),
+		OUTPUT = null
+	let buildArchiveFn = (resolve, reject) => {
+		// 3.a set archive up
+		OUTPUT = FS.createWriteStream(epubFullPath)
+		// listen for all archive data to be written
+		// 'close' event is fired only when a file descriptor is involved
+		OUTPUT.on('close', function () {
+			console.log(archive.pointer() + ' total bytes')
+			console.log(
+				'archiver has been finalized and the output file descriptor has closed.'
+			)
+			resolve(EPUB)
+		})
+		// This event is fired when the data source is drained no matter what was the data source.
+		// It is not part of this library but rather from the NodeJS Stream API.
+		// @see: https://nodejs.org/api/stream.html#stream_event_end
+		OUTPUT.on('end', function () {
+			console.log('Data has been drained')
+		})
+		// good practice to catch warnings (ie stat failures and other non-blocking errors)
+		EPUB.on('warning', function (err) {
+			if (err.code === 'ENOENT') {
+				// log warning
+			} else {
+				// throw error
+				throw err
+			}
+		})
+		// good practice to catch this error explicitly
+		EPUB.on('error', function (err) {
+			throw err
+		})
+		// pipe archive data to the file
+		EPUB.pipe(OUTPUT)
+
+		// 3.b ADDING CONTENT
+	}
+	return new Promise(buildArchiveFn)
+}
+
 // PUBLIC FUNCTIONS
 
-let generate = (epubModel = {}, archiveAsBuffer = true) => {
-	let pDynamicAssets = null,
+let generate = (epubModel = {}, archiveAsBuffer = false) => {
+	let { filename } = epubModel,
+		pDynamicAssets = null,
 		pCopiedAssets = null,
+		epubFullPath = PATH.join(`${__dirname}`, OUTPUT_FOLDER, `${filename}.zip`),
 		compileTemplates = () => {
 			// singleton pages:
 			PAGE_TYPES.forEach((pageName) => {
@@ -105,7 +153,7 @@ let generate = (epubModel = {}, archiveAsBuffer = true) => {
 	pDynamicAssets = new Promise(createAllTemplates)
 	pDynamicAssets.then(compileTemplates)
 
-	pCopiedAssets = new Promise(copyStaticAssets)
+	//pCopiedAssets = new Promise(copyStaticAssets)
 	/*
   content should include:
     publisher: 'poscat',
