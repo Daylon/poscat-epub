@@ -1,0 +1,29 @@
+{
+  "rules": {
+    "block-no-empty": null,
+    "color-no-invalid-hex": true,
+    "declaration-colon-space-after": "always",
+    "indentation": [
+      "tab",
+      {
+        "except": ["value"],
+        "indentInsideParens": "once-at-root-twice-in-block"
+      }
+    ],
+    "max-empty-lines": 2,
+    "selector-max-specificity": "1,2,1",
+    "selector-max-compound-selectors": 3,
+    "unit-whitelist": [
+      "em"
+      , "rem"
+      , "%"
+      , "px"
+      , "vw"
+      , "vh"
+      , "pt"
+      , "s"
+      , "ms"
+      , "deg"
+    ]
+  }
+}

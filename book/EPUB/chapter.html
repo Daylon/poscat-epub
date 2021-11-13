@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr-FR">
   <head>
-    <title>chapter</title>
+    <title>{{chapter.title}}</title>
     <link rel="stylesheet" type="text/css" href="css/poscat-epub.scss" />
   </head>
   <body>
@@ -9,11 +9,10 @@
       class="book"
       epub:type="chapter"
       role="doc-chapter"
-      aria-labelledby="chapter-title--id"
+      aria-labelledby="chapter-title--{{chapter.id}}"
       id="introduction"
     >
-      <h2 id="chapter-title--id" class="chapter-title"></h2>
-      <p>content</p>
+      {{chapter.content}}
     </chapter>
   </body>
 </html>
