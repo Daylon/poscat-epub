@@ -5,7 +5,7 @@ const FILESYSTEM = require('fs'),
 
 const OUTPUT_FOLDER = 'build',
 	PATH_BOOK = PATH.join('.', 'book', 'EPUB'),
-	PAGE_TYPES = ['index', 'toc', 'package'],
+	PAGE_TYPES = ['index', 'toc', 'package', 'cover'], // cover refers as both html and png/svg
 	CHAPTER_KEY = 'chapters',
 	COVER_KEY = 'cover',
 	PAGES = {
@@ -74,11 +74,7 @@ let readCover = (coverPath) => {
 	return new Promise(readCoverFn)
 }
 
-// 2. Copy static assets
-
-let copyStaticAssets = () => {}
-
-// 3. Create archive
+// 2. Create archive
 
 let buildArchive = () => {
 	const EPUB = archiver('zip', {
@@ -120,6 +116,21 @@ let buildArchive = () => {
 		EPUB.pipe(OUTPUT)
 
 		// 3.b ADDING CONTENT
+		// + specialized pags
+		PAGE_TYPES.forEach((pageName) => {
+			let { compiled, name } = PAGES[pageName]
+			EPUB.append(compiled, { name: `EPUB/${name}.html` })
+		})
+		// + chapters
+		PAGES.chapters.forEach((chapter, index) => {
+			let { title, compiled } = chapter
+			EPUB.append(compiled, { name: `EPUB/chapter-${index}.html` })
+		})
+		// + adding buffered files (cover, fonts, etc.)
+		EPUB.append(PAGES.cover.buffer, { name: `EPUB/images/cover` })
+		EPUB.directory('css/', 'css')
+		EPUB.directory('fonts/', 'fonts')
+		EPUB.finalize()
 	}
 	return new Promise(buildArchiveFn)
 }
@@ -129,8 +140,7 @@ let buildArchive = () => {
 let generate = (epubModel = {}, archiveAsBuffer = false) => {
 	let { filename } = epubModel,
 		pDynamicAssets = null,
-		pCopiedAssets = null,
-		epubFullPath = PATH.join(`${__dirname}`, OUTPUT_FOLDER, `${filename}.zip`),
+		pArchivedAssets = null,
 		compileTemplates = () => {
 			// singleton pages:
 			PAGE_TYPES.forEach((pageName) => {
@@ -143,15 +153,19 @@ let generate = (epubModel = {}, archiveAsBuffer = false) => {
 				let { data, title } = chapter
 				PAGES.chapters.content.push({
 					title,
-					data: HANDLEBARS.compile(data),
+					compiled: HANDLEBARS.compile(data),
 				})
 			})
 			// cover
 			PAGES.cover.buffer = readCover(epubModel.cover)
+		},
+		generateFn = (resolve, reject) => {
+			pDynamicAssets = new Promise(createAllTemplates)
+			pDynamicAssets.then(compileTemplates).then(() => {
+				pArchivedAssets = new Promise(buildArchive)
+			})
+			Promise.all([pDynamicAssets, pArchivedAssets]).then(resolve).catch(reject)
 		}
-
-	pDynamicAssets = new Promise(createAllTemplates)
-	pDynamicAssets.then(compileTemplates)
 
 	//pCopiedAssets = new Promise(copyStaticAssets)
 	/*
@@ -179,6 +193,7 @@ let generate = (epubModel = {}, archiveAsBuffer = false) => {
 	//      and keep in buffer
 	//      adjust filename
 	//      return epub buffer
+	return new Promise(generateFn)
 }
 
 exports.generate = generate
