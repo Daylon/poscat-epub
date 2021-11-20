@@ -1,10 +1,12 @@
 const FILESYSTEM = require('fs'),
 	PATH = require('path'),
 	HANDLEBARS = require('handlebars'),
-	ARCHIVER = require('archiver')
+	ARCHIVER = require('archiver'),
+	PARSE_ARGUMENTS = require('./lib/parse-arguments')
 
 const OUTPUT_FOLDER = 'build',
 	PATH_BOOK = PATH.join('.', 'book', 'EPUB'),
+	PATH_EPUB_FULL = PATH.join('.', 'build'),
 	PAGE_TYPES = ['index', 'toc', 'package', 'cover'], // cover refers as both html and png/svg
 	CHAPTER_KEY = 'chapters',
 	COVER_KEY = 'cover',
@@ -83,7 +85,7 @@ let buildArchive = () => {
 		OUTPUT = null
 	let buildArchiveFn = (resolve, reject) => {
 		// 3.a set archive up
-		OUTPUT = FS.createWriteStream(epubFullPath)
+		OUTPUT = FS.createWriteStream(PATH_EPUB_FULL)
 		// listen for all archive data to be written
 		// 'close' event is fired only when a file descriptor is involved
 		OUTPUT.on('close', function () {
@@ -138,6 +140,8 @@ let buildArchive = () => {
 // PUBLIC FUNCTIONS
 
 let generate = (epubModel = {}, archiveAsBuffer = false) => {
+	const ARGUMENTS = PARSE_ARGUMENTS.infer(process.argv)
+
 	let { filename } = epubModel,
 		pDynamicAssets = null,
 		pArchivedAssets = null,

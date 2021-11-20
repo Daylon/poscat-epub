@@ -1,0 +1,3 @@
+[submodule "lib/parse-arguments"]
+	path = lib/parse-arguments
+	url = git@github.com:Daylon/parse-arguments.git
