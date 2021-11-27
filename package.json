@@ -1,22 +1,23 @@
 {
-  "name": "poscat-epub",
-  "version": "0.0.1",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "parcel:index": "npx parcel book/EPUB/index.html",
-    "parcel:chapter": "npx parcel book/EPUB/chapter.html",
-    "parcel:cover": "npx parcel book/EPUB/cover.html",
-    "parcel:toc": "npx parcel book/EPUB/toc.html"
-  },
-  "author": "Daylon",
-  "license": "ISC",
-  "devDependencies": {
-    "parcel": "^2.0.1"
-  },
-  "dependencies": {
-    "archiver": "^5.3.0",
-    "handlebars": "^4.7.7",
-    "parcel-plugin-handlebars": "^0.4.4"
-  }
+	"name": "poscat-epub",
+	"version": "0.0.1",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"zip": "node index.js -- --write=true",
+		"parcel:index": "npx parcel book/EPUB/index.html",
+		"parcel:chapter": "npx parcel book/EPUB/chapter.html",
+		"parcel:cover": "npx parcel book/EPUB/cover.html",
+		"parcel:toc": "npx parcel book/EPUB/toc.html"
+	},
+	"author": "Daylon",
+	"license": "ISC",
+	"devDependencies": {
+		"parcel": "^2.0.1"
+	},
+	"dependencies": {
+		"archiver": "^5.3.0",
+		"handlebars": "^4.7.7",
+		"parcel-plugin-handlebars": "^0.4.4"
+	}
 }

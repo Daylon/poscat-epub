@@ -1,10 +1,11 @@
-const FILESYSTEM = require('fs'),
+const FS = require('fs'),
 	PATH = require('path'),
 	HANDLEBARS = require('handlebars'),
 	ARCHIVER = require('archiver'),
 	PARSE_ARGUMENTS = require('./lib/parse-arguments')
 
-const OUTPUT_FOLDER = 'build',
+const ARGUMENTS = PARSE_ARGUMENTS.infer(process.argv),
+	OUTPUT_FOLDER = 'build',
 	PATH_BOOK = PATH.join('.', 'book', 'EPUB'),
 	PATH_EPUB_FULL = PATH.join('.', 'build'),
 	PAGE_TYPES = ['index', 'toc', 'package', 'cover'], // cover refers as both html and png/svg
@@ -36,9 +37,9 @@ let getPathFor = (file) => PATH.join(`${PATH_BOOK}`, `${file}`)
 let createTemplate = (filename = '') => {
 	let filePath = getPathFor(filename),
 		getTemplateFile = (resolve, reject) => {
-			FS.readFile(filePath, (err, template) => {
-				console.log('> PRETEMPLATING', err)
-				if (err) reject(err)
+			FS.readFile(filePath, 'utf8', (err, template) => {
+				console.log('> PRETEMPLATING err? ', err)
+				if (err !== null) reject(err)
 				else resolve(template)
 			})
 		}
@@ -47,12 +48,15 @@ let createTemplate = (filename = '') => {
 }
 
 let createAllTemplates = (resolve, reject) => {
-	let promises = []
-	for (let page in PAGES) {
+	let promises = [],
+		page = {}
+	for (let pageName in PAGES) {
+		page = PAGES[pageName]
 		page.promise = createTemplate(page.name)
 		page.promise
 			.then((template) => {
-				page.template = template
+				console.log('> finishing preparation')
+				PAGES[pageName].template = Buffer.from(template || '').toString('utf8')
 			})
 			.catch((err) => {
 				console.log('> ERROR in PRETEMPLATING', error)
@@ -61,7 +65,9 @@ let createAllTemplates = (resolve, reject) => {
 	}
 
 	Promise.all(promises)
-		.then(resolve(PAGES))
+		.then((response) => {
+			resolve(PAGES)
+		})
 		.catch((err) => reject(err))
 }
 
@@ -140,8 +146,6 @@ let buildArchive = () => {
 // PUBLIC FUNCTIONS
 
 let generate = (epubModel = {}, archiveAsBuffer = false) => {
-	const ARGUMENTS = PARSE_ARGUMENTS.infer(process.argv)
-
 	let { filename } = epubModel,
 		pDynamicAssets = null,
 		pArchivedAssets = null,
@@ -153,13 +157,15 @@ let generate = (epubModel = {}, archiveAsBuffer = false) => {
 				)
 			})
 			// chapters
-			epubModel.content.forEach((chapter) => {
-				let { data, title } = chapter
-				PAGES.chapters.content.push({
-					title,
-					compiled: HANDLEBARS.compile(data),
+			if (Array.isArray(epubModel.content) === true) {
+				epubModel.content.forEach((chapter) => {
+					let { data, title } = chapter
+					PAGES.chapters.content.push({
+						title,
+						compiled: HANDLEBARS.compile(data),
+					})
 				})
-			})
+			}
 			// cover
 			PAGES.cover.buffer = readCover(epubModel.cover)
 		},
@@ -199,5 +205,7 @@ let generate = (epubModel = {}, archiveAsBuffer = false) => {
 	//      return epub buffer
 	return new Promise(generateFn)
 }
+
+if (ARGUMENTS.write) generate({})
 
 exports.generate = generate
